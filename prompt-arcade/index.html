@@ -1,0 +1,387 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Prompt Arcade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one arcade cabinet. Marquee + prompt bar on top, the game screen in the middle, the cartridge shelf of saved games below. Deliberately one dark look. */
+:root {
+  --plum: #1d1430;
+  --plum-2: #2a1d45;
+  --plum-3: #3b2a5e;
+  --ink: #f6ecff;
+  --muted: #b9a8d6;
+  --coral: #ff6f59;
+  --amber: #ffc845;
+  --teal: #4fd8c4;
+  --danger: #ff8a8a;
+  --f-display: "Bungee", "Impact", system-ui, sans-serif;
+  --f-body: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body {
+  background: radial-gradient(1200px 600px at 50% -200px, var(--plum-3), var(--plum) 70%) fixed, var(--plum);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(28px, 6vw, 44px); margin: 0; line-height: 1; letter-spacing: .02em;
+  color: var(--amber); text-shadow: 3px 3px 0 var(--coral); }
+.tag { color: var(--muted); margin: 0; font-size: 15px; }
+
+/* Prompt bar */
+form.bar { display: flex; gap: 10px; background: var(--plum-2); border: 2px solid var(--plum-3); border-radius: 14px; padding: 8px; }
+form.bar:focus-within { border-color: var(--amber); }
+#prompt { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--ink); font: 600 18px var(--f-body); padding: 10px 10px; outline: none; }
+#prompt::placeholder { color: var(--muted); font-weight: 400; }
+button { font: inherit; cursor: pointer; border: 0; border-radius: 10px; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.go { background: var(--coral); color: #1d1430; font-family: var(--f-display); font-size: 16px; padding: 10px 20px; letter-spacing: .03em; white-space: nowrap; box-shadow: 0 4px 0 #b8402f; }
+.go:active { transform: translateY(2px); box-shadow: 0 2px 0 #b8402f; }
+.go[disabled] { opacity: .5; cursor: progress; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip { background: transparent; color: var(--ink); border: 1.5px solid var(--plum-3); padding: 6px 12px; border-radius: 999px; font-size: 14px; }
+.chip:hover { border-color: var(--amber); color: var(--amber); }
+.opts { color: var(--muted); font-size: 14px; display: flex; gap: 8px; align-items: center; margin-left: auto; }
+select { background: var(--plum-2); color: var(--ink); border: 1.5px solid var(--plum-3); border-radius: 8px; padding: 5px 8px; font: inherit; font-size: 14px; }
+
+/* Screen */
+.cabinet { background: #0f0a1a; border: 3px solid var(--plum-3); border-radius: 18px; padding: 10px; display: grid; gap: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+.screenbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 2px 4px; }
+.screenbar h2 { margin: 0; font: 800 18px var(--f-body); flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pill { font: 600 11px var(--f-mono); text-transform: uppercase; letter-spacing: .08em; padding: 3px 8px; border-radius: 999px; background: var(--plum-3); color: var(--muted); }
+.pill.ex { background: rgba(79,216,196,.15); color: var(--teal); }
+.tool { background: var(--plum-2); color: var(--ink); padding: 7px 12px; font-size: 14px; border: 1.5px solid var(--plum-3); }
+.tool:hover { border-color: var(--amber); }
+.screen { position: relative; width: 100%; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
+.screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+.screen:fullscreen { aspect-ratio: auto; border-radius: 0; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; background: rgba(15,10,26,.92); }
+.overlay .big { font-family: var(--f-display); font-size: clamp(20px, 4vw, 30px); color: var(--amber); margin: 0 0 8px; }
+.overlay p { margin: 4px 0; color: var(--muted); max-width: 46ch; }
+.meter { font: 600 13px var(--f-mono); color: var(--teal); margin-top: 12px; font-variant-numeric: tabular-nums; }
+.blink { display: inline-block; width: 10px; height: 10px; background: var(--coral); border-radius: 2px; margin-right: 8px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .blink { animation: none; } }
+.stop { margin-top: 14px; }
+.err { color: var(--danger); }
+
+form.tweak { display: flex; gap: 8px; }
+#tweak { flex: 1; min-width: 0; background: var(--plum-2); border: 1.5px solid var(--plum-3); border-radius: 10px; color: var(--ink); font: 15px var(--f-body); padding: 9px 12px; }
+#tweak:focus { border-color: var(--amber); outline: none; }
+.tweak .go { font-size: 13px; padding: 8px 14px; background: var(--amber); box-shadow: 0 3px 0 #b88a1c; }
+
+/* Shelf */
+.shelf h3 { font-family: var(--f-display); font-weight: 400; font-size: 16px; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+.carts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.cart { text-align: left; background: var(--plum-2); color: var(--ink); border: 1.5px solid var(--plum-3); padding: 12px; display: grid; gap: 4px; position: relative; min-width: 0; }
+.cart:hover { border-color: var(--amber); }
+.cart.on { border-color: var(--coral); }
+.cart b { font-weight: 800; overflow-wrap: anywhere; padding-right: 22px; }
+.cart small { color: var(--muted); font-size: 13px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cart .x { position: absolute; top: 6px; right: 6px; background: transparent; color: var(--muted); padding: 2px 7px; font-size: 16px; line-height: 1; }
+.cart .x:hover { color: var(--danger); }
+.empty { color: var(--muted); font-size: 14px; margin: 0; }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+.note b { color: var(--ink); }
+@media (max-width: 560px) {
+  form.bar { flex-direction: column; }
+  .go { width: 100%; }
+  .opts { margin-left: 0; }
+  .screen { aspect-ratio: 3 / 4; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Prompt Arcade</h1>
+    <p class="tag">Type a game. Claude builds it. You play it.</p>
+  </header>
+
+  <form class="bar" id="bar" autocomplete="off">
+    <input id="prompt" maxlength="600" placeholder="Make me a racing game with nitro boosts…" aria-label="Describe the game you want">
+    <button class="go" id="make" type="submit">Make it</button>
+  </form>
+
+  <div class="row" id="ideas">
+    <button class="chip" type="button">Top-down racing game with drifting</button>
+    <button class="chip" type="button">Beer pong with ping pong balls you flick</button>
+    <button class="chip" type="button">Space shooter with power-ups</button>
+    <button class="chip" type="button">Tiny farming game: plant, water, sell</button>
+    <button class="chip" type="button">Basketball free throw challenge</button>
+    <button class="chip" type="button">Platformer with a jumping cat</button>
+    <label class="opts" for="tier">Build quality
+      <select id="tier">
+        <option value="default">Fast</option>
+        <option value="complex">Best (slower)</option>
+      </select>
+    </label>
+  </div>
+
+  <section class="cabinet" aria-label="Game screen">
+    <div class="screenbar">
+      <h2 id="gtitle">Comet Dodge</h2>
+      <span class="pill ex" id="gpill">Example</span>
+      <button class="tool" id="restart" type="button">Restart</button>
+      <button class="tool" id="full" type="button">Full screen</button>
+      <button class="tool" id="dl" type="button" hidden>Download</button>
+    </div>
+    <div class="screen" id="screen">
+      <iframe id="game" sandbox="allow-scripts" title="Game"></iframe>
+      <div class="overlay" id="overlay" hidden>
+        <div>
+          <p class="big" id="ovTitle">Building your game</p>
+          <p id="ovText">Claude is thinking up the rules, then writing the code.</p>
+          <p class="meter" id="ovMeter"></p>
+          <button class="tool stop" id="stop" type="button">Stop</button>
+        </div>
+      </div>
+    </div>
+    <form class="tweak" id="tweakForm" autocomplete="off">
+      <input id="tweak" maxlength="400" placeholder="Change it: make the cars faster, add a second player, more levels…" aria-label="Describe a change to this game">
+      <button class="go" type="submit" id="tweakBtn">Change</button>
+    </form>
+  </section>
+
+  <section class="shelf">
+    <h3>My games</h3>
+    <div class="carts" id="carts"></div>
+    <p class="empty" id="empty">Games you make show up here, so you can play them again later.</p>
+  </section>
+
+  <p class="note">Games are made with <b>your Claude account</b>, so there is no API key to set up. The first time you click Make it, Claude asks you to allow this page. Each game takes about a minute on Fast and a few minutes on Best. Click the game screen before using the keyboard.</p>
+</div>
+
+<script>
+const DEMO = `<!doctype html><html><head><meta charset="utf-8"><title>Comet Dodge</title>
+<style>html,body{margin:0;height:100%;background:#0b0716;overflow:hidden;font-family:system-ui,sans-serif}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas><script>
+const c=document.getElementById('c'),x=c.getContext('2d');let W,H;function rs(){W=c.width=innerWidth;H=c.height=innerHeight}addEventListener('resize',rs);rs();
+let st='title',p,rocks,stars,score,best=0,t=0,keys={};
+function reset(){p={x:W/2,y:H-60,r:16};rocks=[];stars=[];score=0;t=0}reset();
+addEventListener('keydown',e=>{keys[e.key]=1;if((e.key===' '||e.key==='Enter')&&st!=='play'){reset();st='play'}});addEventListener('keyup',e=>keys[e.key]=0);
+let tx=null;addEventListener('pointermove',e=>{tx=e.clientX});addEventListener('pointerdown',e=>{tx=e.clientX;if(st!=='play'){reset();st='play'}});
+const bg=[...Array(80)].map(()=>({x:Math.random(),y:Math.random(),s:Math.random()*2+.5}));
+function loop(){t++;x.fillStyle='#0b0716';x.fillRect(0,0,W,H);
+for(const b of bg){b.y+=b.s*.0015;if(b.y>1)b.y=0;x.fillStyle='rgba(255,255,255,'+b.s/3+')';x.fillRect(b.x*W,b.y*H,b.s,b.s)}
+if(st==='play'){const sp=7;if(keys.ArrowLeft||keys.a)p.x-=sp,tx=null;if(keys.ArrowRight||keys.d)p.x+=sp,tx=null;if(tx!==null)p.x+=(tx-p.x)*.2;p.x=Math.max(p.r,Math.min(W-p.r,p.x));p.y=H-60;
+if(Math.random()<.03+t/40000)rocks.push({x:Math.random()*W,y:-30,r:12+Math.random()*22,v:2+Math.random()*3+t/1500});
+if(Math.random()<.015)stars.push({x:Math.random()*W,y:-20,v:2.5});
+for(const r of rocks){r.y+=r.v;if(Math.hypot(r.x-p.x,r.y-p.y)<r.r+p.r-4){st='over';best=Math.max(best,score)}}
+for(const s of stars){s.y+=s.v;if(Math.hypot(s.x-p.x,s.y-p.y)<26){s.y=H+99;score+=10}}
+rocks=rocks.filter(r=>r.y<H+40);stars=stars.filter(s=>s.y<H+40);if(t%30===0)score++}
+for(const r of rocks){x.fillStyle='#ff6f59';x.beginPath();x.arc(r.x,r.y,r.r,0,7);x.fill();x.fillStyle='rgba(255,200,69,.35)';x.beginPath();x.arc(r.x,r.y-r.r*.9,r.r*.6,0,7);x.fill()}
+for(const s of stars){x.font='26px serif';x.textAlign='center';x.fillText('⭐',s.x,s.y+9)}
+x.fillStyle='#4fd8c4';x.beginPath();x.moveTo(p.x,p.y-22);x.lineTo(p.x-16,p.y+14);x.lineTo(p.x+16,p.y+14);x.fill();
+x.fillStyle='#fff';x.textAlign='left';x.font='bold 22px system-ui';x.fillText('Score '+score,16,34);x.textAlign='right';x.fillText('Best '+best,W-16,34);
+if(st!=='play'){x.fillStyle='rgba(11,7,22,.7)';x.fillRect(0,0,W,H);x.textAlign='center';x.fillStyle='#ffc845';x.font='bold '+Math.min(64,W/9)+'px system-ui';
+x.fillText(st==='title'?'COMET DODGE':'GAME OVER',W/2,H/2-30);x.fillStyle='#fff';x.font='20px system-ui';
+x.fillText(st==='title'?'Dodge comets, grab stars. Arrows or mouse to move.':'Score '+score,W/2,H/2+14);x.fillText('Press Space or tap to '+(st==='title'?'start':'play again'),W/2,H/2+48)}
+requestAnimationFrame(loop)}loop();
+<\/script></body></html>`;
+
+const $ = id => document.getElementById(id);
+const els = { bar: $('bar'), prompt: $('prompt'), make: $('make'), tier: $('tier'), game: $('game'), overlay: $('overlay'),
+  ovTitle: $('ovTitle'), ovText: $('ovText'), ovMeter: $('ovMeter'), stop: $('stop'), gtitle: $('gtitle'), gpill: $('gpill'),
+  restart: $('restart'), full: $('full'), dl: $('dl'), tweakForm: $('tweakForm'), tweak: $('tweak'), tweakBtn: $('tweakBtn'),
+  carts: $('carts'), empty: $('empty'), screen: $('screen') };
+
+const KEY = 'prompt-arcade-games-v1';
+function loadGames() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } }
+function saveGames(list) {
+  while (list.length) {
+    try { localStorage.setItem(KEY, JSON.stringify(list)); return; }
+    catch { list.pop(); } // storage full: drop the oldest
+  }
+  try { localStorage.removeItem(KEY); } catch {}
+}
+let games = loadGames();
+let current = { id: 'demo', title: 'Comet Dodge', prompt: 'Example game', html: DEMO, demo: true };
+
+function play(g) {
+  current = g;
+  els.game.srcdoc = g.html;
+  els.gtitle.textContent = g.title;
+  els.gpill.hidden = !g.demo;
+  els.dl.hidden = !downloads;
+  renderShelf();
+}
+els.game.addEventListener('load', () => { try { els.game.contentWindow.focus(); } catch {} });
+els.restart.onclick = () => play(current);
+els.full.onclick = async () => {
+  try { document.fullscreenElement ? await document.exitFullscreen() : await els.screen.requestFullscreen(); }
+  catch { els.full.textContent = 'Not available here'; setTimeout(() => els.full.textContent = 'Full screen', 2000); }
+};
+
+function renderShelf() {
+  els.carts.replaceChildren();
+  els.empty.hidden = games.length > 0;
+  for (const g of games) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cart' + (g.id === current.id ? ' on' : '');
+    const t = document.createElement('b'); t.textContent = g.title;
+    const s = document.createElement('small'); s.textContent = g.prompt;
+    const x = document.createElement('span'); x.className = 'x'; x.textContent = '×'; x.title = 'Remove'; x.setAttribute('role', 'button'); x.setAttribute('aria-label', 'Remove ' + g.title);
+    x.onclick = e => { e.stopPropagation(); games = games.filter(o => o.id !== g.id); saveGames(games); renderShelf(); };
+    b.append(t, s, x);
+    b.onclick = () => { play(g); els.screen.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    els.carts.append(b);
+  }
+}
+
+const RULES = `You build small, fun, polished 2D browser games from a one-line request.
+
+Reply with ONE complete HTML document and nothing else: no explanation, no markdown fences. Start with <!doctype html>. The first element inside <head> must be <title> with a short, catchy game name (2-4 words).
+
+Hard rules (the game runs in a locked-down sandboxed iframe):
+- Everything inline in this one file. No external scripts, libraries, fonts, images, sounds or network requests of any kind; they are blocked.
+- Draw with Canvas 2D (preferred) or DOM/CSS. Make all art with code: shapes, gradients, simple particle effects. Emoji are fine as sprites.
+- No alert(), confirm(), prompt(), localStorage, cookies, fullscreen or pointer lock. Keep high scores in memory.
+- Fill the whole window (canvas sized to innerWidth/innerHeight, handle resize). Body margin 0, overflow hidden. The window may be wide or tall, so lay out for both.
+- Sound is optional: if used, Web Audio only, created after the first key press or tap.
+
+Make it a real game:
+- Title screen with the name, a one-line goal and the controls, and "Press Space or tap to start".
+- Keyboard controls AND mouse/touch controls (tap, drag or on-screen buttons) so it also works on a phone.
+- Clear score/progress, rising difficulty, a game-over or win screen, and instant restart.
+- Juicy feel: smooth requestAnimationFrame loop using delta time, screen shake or particles on big moments, a coherent color palette.
+- Keep the code tidy and under about 700 lines. Make sure it runs without errors.`;
+
+function buildInput(req) {
+  return RULES + `\n\nThe request: "${req}"`;
+}
+function buildTweakInput(g, change) {
+  return RULES + `\n\nHere is the current game, originally made for the request "${g.prompt}":\n\n` + g.html +
+    `\n\nChange the game like this: "${change}"\nKeep everything else that works. Reply with the complete updated HTML document.`;
+}
+
+function extractHtml(t) {
+  const fence = t.match(/```(?:html)?\s*\n([\s\S]*?)```/i);
+  if (fence && /<(html|canvas|script)/i.test(fence[1])) t = fence[1];
+  const s = t.search(/<!doctype html|<html/i);
+  if (s > 0) t = t.slice(s);
+  const e = t.toLowerCase().lastIndexOf('</html>');
+  if (e >= 0) t = t.slice(0, e + 7);
+  return t.trim();
+}
+function titleOf(html, fallback) {
+  const m = html.match(/<title>([^<]{1,60})<\/title>/i);
+  return (m && m[1].trim()) || fallback;
+}
+
+const ERR = {
+  not_granted: 'This page needs your OK to use Claude. Reload the page and choose Allow when asked.',
+  sampling_disabled: 'Claude is not available for this account right now.',
+  rate_limited: 'You have hit a usage limit for now. Wait a bit, then try again.',
+  session_expired: 'You were signed out. Sign in to Claude again, then try again.',
+  refused: 'Claude would not make that one. Try describing a different game.',
+  prompt_too_large: 'This game got too big to change. Try making a fresh game instead.',
+  empty_completion: 'Claude came back empty. Try wording the idea differently.',
+};
+
+let sample = null, samplePromise = null, downloads = null, ctl = null, busy = false;
+
+function setBusy(on, label) {
+  busy = on;
+  els.make.disabled = on; els.tweakBtn.disabled = on;
+  els.overlay.hidden = !on;
+  els.stop.hidden = !on;
+  if (on) {
+    els.ovTitle.textContent = label;
+    els.ovText.textContent = 'Claude is thinking up the rules first. Code starts appearing in a moment.';
+    els.ovText.classList.remove('err');
+    els.ovMeter.innerHTML = '<span class="blink"></span>Thinking…';
+  }
+}
+function showError(msg) {
+  els.overlay.hidden = false;
+  els.ovTitle.textContent = 'That did not work';
+  els.ovText.textContent = msg;
+  els.ovText.classList.add('err');
+  els.ovMeter.textContent = '';
+  els.stop.hidden = false; els.stop.textContent = 'Close';
+}
+els.stop.onclick = () => {
+  if (busy && ctl) ctl.abort();
+  else { els.overlay.hidden = true; els.stop.textContent = 'Stop'; }
+};
+
+async function generate(input, meta) {
+  if (busy) return;
+  if (!sample && samplePromise) { els.overlay.hidden = false; els.ovTitle.textContent = 'Connecting to Claude'; els.ovText.textContent = ''; els.ovMeter.textContent = ''; els.stop.hidden = true; sample = await samplePromise; els.overlay.hidden = true; }
+  if (!sample) { showError('Open this page inside Claude (claude.ai or the Claude app) to make games. Here it can only play the example.'); return; }
+  setBusy(true, meta.label);
+  els.stop.textContent = 'Stop';
+  ctl = new AbortController();
+  const started = Date.now();
+  try {
+    const res = await sample(input, {
+      signal: ctl.signal,
+      modelTier: els.tier.value,
+      cache: false,
+      onText: ({ text }) => {
+        const lines = text.split('\n').length;
+        const secs = Math.round((Date.now() - started) / 1000);
+        els.ovText.textContent = 'Writing the code. It runs as soon as it is done.';
+        els.ovMeter.innerHTML = '<span class="blink"></span>' + lines + ' lines written · ' + secs + 's';
+      },
+    });
+    const html = extractHtml(res.text);
+    if (!/<(script|canvas)/i.test(html)) throw { code: 'no_game' };
+    const g = { id: 'g' + Date.now(), title: titleOf(html, meta.fallbackTitle), prompt: meta.prompt, html, created: Date.now() };
+    games = [g, ...games].slice(0, 40);
+    saveGames(games);
+    setBusy(false);
+    play(g);
+    if (res.truncated) showError('The game came out longer than allowed, so the end may be missing. If it does not work, try again on Fast or ask for a simpler game.');
+  } catch (e) {
+    setBusy(false);
+    if (e && e.code === 'cancelled') return;
+    if (e && e.code === 'no_game') return showError('Claude answered, but not with a game. Try again, maybe with a bit more detail.');
+    showError(ERR[e && e.code] || 'Something went wrong while building. Try again in a moment.');
+  }
+}
+
+els.bar.addEventListener('submit', e => {
+  e.preventDefault();
+  const req = els.prompt.value.trim();
+  if (!req) { els.prompt.focus(); return; }
+  generate(buildInput(req), { label: 'Building your game', prompt: req, fallbackTitle: req.slice(0, 40) });
+});
+els.tweakForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const change = els.tweak.value.trim();
+  if (!change) { els.tweak.focus(); return; }
+  generate(buildTweakInput(current, change), {
+    label: 'Changing ' + current.title,
+    prompt: current.demo ? change : current.prompt + ' + ' + change,
+    fallbackTitle: current.title,
+  });
+  els.tweak.value = '';
+});
+document.querySelectorAll('#ideas .chip').forEach(c => c.onclick = () => { els.prompt.value = c.textContent; els.prompt.focus(); });
+
+els.dl.onclick = async () => {
+  if (!downloads) return;
+  const name = (current.title || 'game').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'game';
+  try { await downloads.save({ filename: name + '.html', data: current.html }); } catch {}
+};
+
+play(current);
+if (window.claude && claude.use) {
+  samplePromise = claude.use('sample').then(s => (sample = s), () => null);
+  claude.use('downloads').then(d => { downloads = d; els.dl.hidden = !d; });
+}
+</script>
+
+</body></html>

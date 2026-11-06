@@ -1,0 +1,408 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sprout Acres</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: one game card — status strip on top, the field canvas in the middle, seed tray + market below. Single sunny-day look by choice. */
+:root{
+  --sky:#bfe3d0; --field:#5d9b4a; --soil:#7a4f2e; --wood:#a8703f; --wood-dark:#6e4423;
+  --paper:#fff8e6; --ink:#2f2a1f; --muted:#6f6550; --leaf:#3f7d32; --gold:#e8b43a; --water:#3d8fd6; --berry:#d24b5a;
+  --display:"Pixelify Sans", ui-monospace, "Courier New", monospace;
+  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+html,body{min-height:100%}
+body{background:var(--sky);color:var(--ink);font-family:var(--body);font-size:15px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:16px 28px;
+  background-image:radial-gradient(circle at 15% 0%, #e6f5ea 0, transparent 45%);}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;color:var(--wood-dark);letter-spacing:.5px;text-shadow:2px 2px 0 #fff8e6}
+.goal{font-size:13px;color:var(--muted);font-weight:700}
+.stats{display:flex;flex-wrap:wrap;gap:8px}
+.stat{background:var(--paper);border:2px solid var(--wood-dark);border-radius:6px;padding:4px 10px;font-family:var(--display);font-size:17px;display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;box-shadow:0 2px 0 var(--wood-dark)}
+.stat small{font-family:var(--body);font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.bar{width:70px;height:10px;background:#e7dcc0;border-radius:3px;overflow:hidden;border:1px solid var(--wood-dark)}
+.bar i{display:block;height:100%;background:var(--gold);transition:width .2s}
+.board{position:relative;background:var(--wood);border:3px solid var(--wood-dark);border-radius:10px;padding:8px;box-shadow:0 4px 0 var(--wood-dark)}
+canvas{display:block;width:100%;height:auto;border-radius:4px;touch-action:manipulation;cursor:pointer;image-rendering:auto}
+.toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:var(--paper);border:2px solid var(--wood-dark);border-radius:6px;padding:6px 12px;font-weight:800;font-size:14px;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1}
+.panel{background:var(--paper);border:2px solid var(--wood-dark);border-radius:8px;padding:10px 12px;display:grid;gap:8px;box-shadow:0 3px 0 var(--wood-dark)}
+.panel h2{font-family:var(--display);font-size:16px;margin:0;color:var(--wood-dark);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:620px){.cols{grid-template-columns:1fr}}
+button{font-family:var(--body);font-weight:800;font-size:14px;color:var(--ink);background:#fff;border:2px solid var(--wood-dark);border-radius:6px;padding:7px 10px;cursor:pointer;box-shadow:0 2px 0 var(--wood-dark);transition:transform .05s}
+button:active{transform:translateY(2px);box-shadow:none}
+button:focus-visible{outline:3px solid var(--water);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.seed{display:flex;align-items:center;gap:6px;min-width:0}
+.seed canvas{width:26px;height:26px;cursor:inherit}
+.seed[aria-pressed="true"]{background:#fde9a8;border-color:var(--wood-dark);outline:2px solid var(--gold)}
+.seed .n{font-family:var(--display);font-size:15px;color:var(--muted)}
+.big{font-family:var(--display);font-size:17px;padding:9px 14px}
+.sleep{background:#33406b;color:#fff8e6}
+.sell{background:var(--gold)}
+.market{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.market td,.market th{padding:4px 4px;text-align:left;border-bottom:1px dashed #d9caa4}
+.market th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.market td button{padding:3px 8px;font-size:12px}
+.up{color:var(--leaf);font-weight:800}.down{color:var(--berry);font-weight:800}
+.help{font-size:13px;color:var(--muted);line-height:1.5;margin:0}
+.help b{color:var(--ink)}
+.basket{font-size:13px;font-weight:700}
+.modal{position:absolute;inset:0;background:rgba(30,25,15,.55);display:grid;place-items:center;border-radius:8px}
+[hidden]{display:none!important}
+.modal .panel{max-width:320px;text-align:center}
+.foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.link{background:none;border:none;box-shadow:none;color:var(--muted);text-decoration:underline;padding:2px;font-weight:700;font-size:12px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Sprout Acres</h1>
+      <div class="goal" id="goal">Goal: save $1,000 to pay off the farm</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><small>Day</small><span id="day">1</span></div>
+      <div class="stat"><small>Cash</small>$<span id="money">0</span></div>
+      <div class="stat"><small>Energy</small><div class="bar"><i id="energyBar"></i></div><span id="energy">0</span></div>
+    </div>
+  </header>
+
+  <div class="board">
+    <canvas id="field" width="768" height="576" aria-label="Farm field. Tap a plot to work it."></canvas>
+    <div class="toast" id="toast"></div>
+    <div class="modal" id="modal" hidden>
+      <div class="panel">
+        <h2 id="modalTitle">Start over?</h2>
+        <p class="help" id="modalText">Your farm, cash and seeds will be reset.</p>
+        <div class="row" style="justify-content:center">
+          <button id="modalNo">Keep farming</button>
+          <button id="modalYes" class="sell">Start over</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2>Seed bag</h2>
+      <span class="basket" id="basket">Basket: empty</span>
+    </div>
+    <div class="row" id="seeds"></div>
+    <div class="row">
+      <button class="big sell" id="sellBtn">Sell basket</button>
+      <button class="big sleep" id="sleepBtn">Sleep → next day</button>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <h2>Market today</h2>
+      <table class="market">
+        <thead><tr><th>Crop</th><th>Grows</th><th>Seed</th><th>Sells for</th><th></th></tr></thead>
+        <tbody id="marketRows"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>How to farm</h2>
+      <p class="help">Tap a plot and it does the next job: <b>clear weeds</b>, <b>till</b> the grass, <b>plant</b> the selected seed, <b>water</b> it, and <b>harvest</b> when it sparkles. Crops only grow on days they were watered. Rain waters everything for you. Every job uses energy, so <b>sleep</b> to refill it.</p>
+      <div class="row" id="landRow"></div>
+      <div class="foot">
+        <span class="help" id="weather"></span>
+        <span><button class="link" id="muteBtn">Sound: on</button> <button class="link" id="resetBtn">New farm</button></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const COLS = 8, ROWS = 6, T = 96; // canvas tile size (canvas is 768x576)
+const MAX_E = 30, GOAL = 1000;
+const CROPS = {
+  radish: { name:"Radish", days:3, seed:10, price:28, color:"#d94a6a" },
+  corn:   { name:"Corn",   days:5, seed:20, price:62, color:"#f2c53d" },
+  melon:  { name:"Melon",  days:7, seed:40, price:150, color:"#5aa64a" },
+};
+const LAND_COST = [150, 350]; // unlocks row 5, then row 6
+const COST = { weed:2, till:2, plant:1, water:1, harvest:1 };
+
+const $ = id => document.getElementById(id);
+const cv = $("field"), ctx = cv.getContext("2d");
+
+// ---------- state ----------
+function rand(seed){ let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+function freshState(){
+  const r = rand(Date.now());
+  const tiles = [];
+  for (let y=0;y<ROWS;y++) for (let x=0;x<COLS;x++)
+    tiles.push({ tilled:false, watered:false, weed: r() < 0.28, crop:null });
+  return { day:1, money:50, energy:MAX_E, rowsOpen:4, seeds:{radish:5,corn:0,melon:0}, basket:{radish:0,corn:0,melon:0},
+           selected:"radish", tiles, rain:false, prices:rollPrices(r), won:false, earned:0 };
+}
+function rollPrices(r = Math.random){
+  const p = {}; for (const k in CROPS) p[k] = Math.round(CROPS[k].price * (0.8 + r()*0.45)); return p;
+}
+let S, muted = false;
+function load(){
+  try { const raw = localStorage.getItem("sprout-acres-v1"); if (raw) return JSON.parse(raw); } catch(e){}
+  return null;
+}
+function save(){ try { localStorage.setItem("sprout-acres-v1", JSON.stringify(S)); } catch(e){} }
+
+// ---------- sound ----------
+let ac = null;
+function beep(freq=440, dur=.08, type="square", vol=.05, slide=0){
+  if (muted) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide), t+dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+.02);
+  } catch(e){}
+}
+const SFX = {
+  till(){ beep(140,.09,"square",.05,-60); },
+  weed(){ beep(220,.07,"sawtooth",.04,-120); },
+  plant(){ beep(520,.06,"triangle",.07,200); },
+  water(){ beep(900,.12,"sine",.05,-500); },
+  harvest(){ beep(660,.07,"square",.05); setTimeout(()=>beep(990,.09,"square",.05),70); },
+  coin(){ [880,1175,1568].forEach((f,i)=>setTimeout(()=>beep(f,.08,"square",.04),i*60)); },
+  no(){ beep(120,.12,"square",.04); },
+  sleep(){ [523,392,330,262].forEach((f,i)=>setTimeout(()=>beep(f,.14,"triangle",.06),i*110)); },
+};
+
+// ---------- drawing ----------
+const noise = rand(7); const grassDots = Array.from({length:COLS*ROWS}, () => Array.from({length:6}, () => [noise()*T, noise()*T, noise()]));
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x,y,w,h,r) : ctx.rect(x,y,w,h); }
+
+function drawTile(i, t, now){
+  const x = (i % COLS) * T, y = Math.floor(i / COLS) * T, row = Math.floor(i / COLS);
+  const locked = row >= S.rowsOpen;
+  // grass
+  ctx.fillStyle = ((i + row) % 2) ? "#64a450" : "#5d9b4a"; ctx.fillRect(x,y,T,T);
+  for (const [dx,dy,v] of grassDots[i]) { ctx.fillStyle = v>.5 ? "#7bb862" : "#4f8a3e"; ctx.fillRect(x+dx, y+dy, 4, 8); }
+  if (locked){
+    ctx.fillStyle = "rgba(60,45,25,.38)"; ctx.fillRect(x,y,T,T);
+    // fence
+    ctx.fillStyle = "#c08a55"; ctx.fillRect(x, y+T*.42, T, 8); ctx.fillRect(x, y+T*.62, T, 8);
+    ctx.fillStyle = "#8a5a30"; ctx.fillRect(x+T*.2, y+T*.3, 10, T*.48); ctx.fillRect(x+T*.7, y+T*.3, 10, T*.48);
+    return;
+  }
+  if (t.tilled){
+    rr(x+5,y+5,T-10,T-10,10); ctx.fillStyle = t.watered ? "#4e301a" : "#8a5b34"; ctx.fill();
+    ctx.fillStyle = t.watered ? "#3e2513" : "#714828";
+    for (let k=0;k<4;k++) ctx.fillRect(x+14, y+18+k*19, T-28, 5);
+    if (t.watered){ ctx.fillStyle = "rgba(120,180,240,.35)"; ctx.beginPath(); ctx.ellipse(x+T*.72,y+T*.75,10,5,0,0,7); ctx.fill(); }
+  }
+  if (t.weed){
+    ctx.fillStyle = "#2f6b27";
+    for (const [dx,dy] of [[.3,.55],[.55,.4],[.65,.65]]){
+      const cx = x+dx*T, cy = y+dy*T;
+      ctx.beginPath(); ctx.moveTo(cx-12,cy+10); ctx.quadraticCurveTo(cx-10,cy-14,cx,cy-18); ctx.quadraticCurveTo(cx-2,cy,cx+12,cy+10); ctx.fill();
+    }
+    ctx.fillStyle = "#9a9a8a"; ctx.beginPath(); ctx.ellipse(x+T*.25,y+T*.78,10,7,0,0,7); ctx.fill();
+  }
+  if (t.crop) drawCrop(t.crop, x, y, now);
+}
+
+function drawCrop(c, x, y, now){
+  const def = CROPS[c.type], p = Math.min(1, c.age / def.days), cx = x+T/2, base = y+T*.78;
+  const sway = Math.sin(now/600 + x*.05) * 2;
+  const leaf = (lx,ly,ang,len,col="#4e9a3a") => { ctx.save(); ctx.translate(lx,ly); ctx.rotate(ang); ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,-len/2,len*.28,len/2,0,0,7); ctx.fill(); ctx.restore(); };
+  if (c.age === 0){ // seed mound
+    ctx.fillStyle = "#5a3a20"; ctx.beginPath(); ctx.ellipse(cx,base,14,6,0,0,7); ctx.fill();
+    ctx.fillStyle = "#e9d7a6"; ctx.fillRect(cx-3,base-4,5,4); return;
+  }
+  if (p < 1){ // sprout -> young plant
+    const h = 10 + p*30;
+    ctx.strokeStyle = "#3f7d32"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx,base); ctx.lineTo(cx+sway,base-h); ctx.stroke();
+    leaf(cx+sway,base-h,-.8,12+p*14); leaf(cx+sway,base-h,.8,12+p*14);
+    if (p > .5) { leaf(cx, base-h*.5, -1.1, 14, "#5aac45"); leaf(cx, base-h*.5, 1.1, 14, "#5aac45"); }
+    return;
+  }
+  // ripe
+  if (c.type === "radish"){
+    leaf(cx+sway,base-16,-.5,30); leaf(cx+sway,base-16,.5,30); leaf(cx+sway,base-16,0,34,"#5aac45");
+    ctx.fillStyle = def.color; ctx.beginPath(); ctx.ellipse(cx,base-6,15,14,0,0,7); ctx.fill();
+    ctx.fillStyle = "#f7a3b5"; ctx.beginPath(); ctx.ellipse(cx-5,base-10,4,5,0,0,7); ctx.fill();
+  } else if (c.type === "corn"){
+    ctx.strokeStyle = "#4a8a35"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx,base); ctx.lineTo(cx+sway,base-62); ctx.stroke();
+    leaf(cx,base-20,-1,34); leaf(cx,base-30,1,34); leaf(cx+sway,base-60,-.3,22,"#5aac45");
+    ctx.fillStyle = def.color; rr(cx+4,base-50,13,30,6); ctx.fill();
+    ctx.fillStyle = "#d9a520"; for(let k=0;k<4;k++) ctx.fillRect(cx+7, base-46+k*7, 7, 3);
+    ctx.fillStyle = "#7cbf4f"; ctx.beginPath(); ctx.moveTo(cx+3,base-18); ctx.lineTo(cx+19,base-30); ctx.lineTo(cx+10,base-16); ctx.fill();
+  } else {
+    ctx.strokeStyle = "#3f7d32"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx-30,base-4); ctx.quadraticCurveTo(cx-10,base-22,cx+28,base-8); ctx.stroke();
+    leaf(cx-24,base-6,-1.2,20); leaf(cx+26,base-10,1.2,20);
+    ctx.fillStyle = def.color; ctx.beginPath(); ctx.ellipse(cx,base-14,24,19,0,0,7); ctx.fill();
+    ctx.strokeStyle = "#2f6e2a"; ctx.lineWidth = 4;
+    for (const o of [-12,0,12]) { ctx.beginPath(); ctx.ellipse(cx+o*.9,base-14,4,18,0,0,7); ctx.stroke(); }
+    ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.beginPath(); ctx.ellipse(cx-9,base-22,6,4,-.4,0,7); ctx.fill();
+  }
+  // sparkle
+  const s = (Math.sin(now/250 + x) + 1) / 2;
+  ctx.fillStyle = `rgba(255,248,200,${.5+s*.5})`;
+  star(x+T*.82, y+T*.2, 5+s*4); star(x+T*.18, y+T*.32, 3+ (1-s)*3);
+}
+function star(x,y,r){ ctx.beginPath(); for(let k=0;k<8;k++){ const a=k*Math.PI/4, rad = k%2? r*.35 : r; ctx.lineTo(x+Math.cos(a)*rad, y+Math.sin(a)*rad); } ctx.fill(); }
+
+// floating text + particles + rain + night fade
+const floats = [], drops = [];
+let fade = 0, fadeDir = 0, hover = -1;
+function addFloat(i, text, color="#fff8e6"){ floats.push({ x:(i%COLS)*T+T/2, y:Math.floor(i/COLS)*T+T*.45, text, color, life:1 }); }
+function addDrops(i, color, n=8){ const x=(i%COLS)*T+T/2, y=Math.floor(i/COLS)*T+T/2; for(let k=0;k<n;k++) drops.push({x,y,vx:(Math.random()-.5)*6,vy:-Math.random()*6-1,life:1,color}); }
+const rainLines = Array.from({length:70}, () => [Math.random()*768, Math.random()*576, 6+Math.random()*6]);
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(50, now - last) / 16.67; last = now;
+  S.tiles.forEach((t,i) => drawTile(i,t,now));
+  if (hover >= 0 && Math.floor(hover/COLS) < S.rowsOpen){
+    ctx.strokeStyle = "rgba(255,248,230,.85)"; ctx.lineWidth = 4; rr((hover%COLS)*T+3,Math.floor(hover/COLS)*T+3,T-6,T-6,10); ctx.stroke();
+  }
+  if (S.rain){
+    ctx.fillStyle = "rgba(40,60,90,.12)"; ctx.fillRect(0,0,768,576);
+    ctx.strokeStyle = "rgba(200,225,255,.55)"; ctx.lineWidth = 2; ctx.beginPath();
+    for (const r of rainLines){ r[1] += r[2]*dt; r[0] -= r[2]*.25*dt; if (r[1] > 576){ r[1] = -10; r[0] = Math.random()*800; } ctx.moveTo(r[0],r[1]); ctx.lineTo(r[0]+4,r[1]-14); }
+    ctx.stroke();
+  }
+  for (let k=drops.length-1;k>=0;k--){ const d=drops[k]; d.x+=d.vx*dt; d.y+=d.vy*dt; d.vy+=.35*dt; d.life-=.03*dt; if(d.life<=0){drops.splice(k,1);continue;} ctx.globalAlpha=d.life; ctx.fillStyle=d.color; ctx.fillRect(d.x,d.y,6,6); }
+  ctx.globalAlpha = 1;
+  ctx.font = "700 30px 'Pixelify Sans', monospace"; ctx.textAlign = "center";
+  for (let k=floats.length-1;k>=0;k--){ const f=floats[k]; f.y -= .8*dt; f.life -= .018*dt; if(f.life<=0){floats.splice(k,1);continue;}
+    ctx.globalAlpha = Math.min(1,f.life*2); ctx.lineWidth = 5; ctx.strokeStyle = "#2f2a1f"; ctx.strokeText(f.text,f.x,f.y); ctx.fillStyle = f.color; ctx.fillText(f.text,f.x,f.y); }
+  ctx.globalAlpha = 1;
+  if (fadeDir){
+    fade += fadeDir * .04 * dt;
+    if (fade >= 1){ fade = 1; fadeDir = -1; nextDay(); }
+    if (fade <= 0){ fade = 0; fadeDir = 0; }
+    ctx.fillStyle = `rgba(20,24,52,${fade})`; ctx.fillRect(0,0,768,576);
+    if (fade > .5){ ctx.globalAlpha = (fade-.5)*2; ctx.fillStyle = "#fff8e6"; ctx.font = "700 44px 'Pixelify Sans', monospace"; ctx.fillText(`Day ${S.day}`, 384, 300); ctx.globalAlpha = 1; }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- actions ----------
+let toastTimer;
+function toast(msg){ const el=$("toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove("show"), 1600); }
+function spend(n){ if (S.energy < n){ toast("Too tired. Sleep to get your energy back."); SFX.no(); return false; } S.energy -= n; return true; }
+
+function act(i){
+  if (fadeDir) return;
+  const row = Math.floor(i/COLS), t = S.tiles[i];
+  if (row >= S.rowsOpen){ toast("Fenced off. Buy this land in How to farm."); SFX.no(); return; }
+  if (t.weed){ if(!spend(COST.weed)) return; t.weed=false; SFX.weed(); addDrops(i,"#2f6b27"); }
+  else if (!t.tilled){ if(!spend(COST.till)) return; t.tilled=true; SFX.till(); addDrops(i,"#8a5b34"); }
+  else if (!t.crop){
+    const k = S.selected;
+    if (!S.seeds[k]){ toast(`No ${CROPS[k].name.toLowerCase()} seeds. Buy some at the market.`); SFX.no(); return; }
+    if(!spend(COST.plant)) return; S.seeds[k]--; t.crop = { type:k, age:0 }; SFX.plant();
+  }
+  else if (t.crop.age >= CROPS[t.crop.type].days){
+    if(!spend(COST.harvest)) return; const k=t.crop.type; S.basket[k]++; t.crop=null; t.watered=false; SFX.harvest(); addFloat(i, "+1", CROPS[k].color); addDrops(i, CROPS[k].color, 12);
+  }
+  else if (!t.watered){ if(!spend(COST.water)) return; t.watered=true; SFX.water(); addDrops(i,"#6fb6f0"); }
+  else { const left = CROPS[t.crop.type].days - t.crop.age; toast(`${CROPS[t.crop.type].name}: ${left} more watered day${left>1?"s":""}`); return; }
+  render(); save();
+}
+
+function sell(){
+  let total = 0, n = 0;
+  for (const k in S.basket){ total += S.basket[k] * S.prices[k]; n += S.basket[k]; S.basket[k] = 0; }
+  if (!n){ toast("Basket is empty. Harvest something first."); SFX.no(); return; }
+  S.money += total; S.earned += total; SFX.coin(); toast(`Sold ${n} crop${n>1?"s":""} for $${total}`);
+  if (!S.won && S.money >= GOAL){ S.won = true; setTimeout(()=>openModal("Farm paid off!", `You saved $${GOAL.toLocaleString()} in ${S.day} days. Keep farming as long as you like.`, null), 500); }
+  render(); save();
+}
+function nextDay(){
+  S.day++; S.energy = MAX_E;
+  S.tiles.forEach(t => { if (t.crop && t.watered && t.crop.age < CROPS[t.crop.type].days) t.crop.age++; t.watered = false; });
+  // a few weeds creep back onto empty untilled grass
+  S.tiles.forEach((t,i) => { if (Math.floor(i/COLS) < S.rowsOpen && !t.tilled && !t.weed && Math.random() < .06) t.weed = true; });
+  S.rain = Math.random() < .22;
+  if (S.rain) S.tiles.forEach(t => { if (t.tilled) t.watered = true; });
+  const old = S.prices; S.prices = rollPrices(); S.prevPrices = old;
+  render(); save();
+}
+function sleep(){ if (fadeDir) return; SFX.sleep(); fadeDir = 1; }
+function buy(k){ const c = CROPS[k].seed; if (S.money < c){ toast("Not enough cash."); SFX.no(); return; } S.money -= c; S.seeds[k]++; S.selected = k; SFX.coin(); render(); save(); }
+function buyLand(){ const idx = S.rowsOpen - 4, c = LAND_COST[idx]; if (c == null) return; if (S.money < c){ toast(`You need $${c} for more land.`); SFX.no(); return; } S.money -= c; S.rowsOpen++; SFX.coin(); toast("New row of land unlocked!"); render(); save(); }
+
+// ---------- UI ----------
+function cropIcon(k){
+  const c = document.createElement("canvas"); c.width = c.height = 52;
+  const g = c.getContext("2d"), col = CROPS[k].color;
+  g.fillStyle = "#4e9a3a"; g.beginPath(); g.ellipse(20,14,5,11,-.5,0,7); g.ellipse(32,14,5,11,.5,0,7); g.fill();
+  g.fillStyle = col; g.beginPath();
+  if (k === "corn"){ g.ellipse(26,32,9,16,0,0,7); } else if (k === "melon"){ g.ellipse(26,32,18,15,0,0,7); } else { g.ellipse(26,32,13,13,0,0,7); }
+  g.fill(); return c;
+}
+function render(){
+  $("day").textContent = S.day; $("money").textContent = S.money.toLocaleString();
+  $("energy").textContent = S.energy; $("energyBar").style.width = (S.energy/MAX_E*100) + "%";
+  $("goal").textContent = S.won ? `Farm paid off on the way. Total earned: $${S.earned.toLocaleString()}` : `Goal: save $${GOAL.toLocaleString()} to pay off the farm ($${Math.max(0,GOAL-S.money).toLocaleString()} to go)`;
+  const seeds = $("seeds"); seeds.innerHTML = "";
+  for (const k in CROPS){
+    const b = document.createElement("button"); b.className = "seed"; b.id = "seed-"+k; b.setAttribute("aria-pressed", S.selected===k);
+    b.append(cropIcon(k)); const s = document.createElement("span"); s.textContent = CROPS[k].name; b.append(s);
+    const n = document.createElement("span"); n.className = "n"; n.textContent = "×" + S.seeds[k]; b.append(n);
+    b.onclick = () => { S.selected = k; SFX.plant(); render(); save(); }; seeds.append(b);
+  }
+  const items = Object.keys(S.basket).filter(k => S.basket[k]).map(k => `${S.basket[k]} ${CROPS[k].name}`);
+  const worth = Object.keys(S.basket).reduce((a,k)=>a+S.basket[k]*S.prices[k],0);
+  $("basket").textContent = items.length ? `Basket: ${items.join(", ")} ($${worth})` : "Basket: empty";
+  const tb = $("marketRows"); tb.innerHTML = "";
+  for (const k in CROPS){
+    const p = S.prices[k], prev = S.prevPrices ? S.prevPrices[k] : p, tr = document.createElement("tr");
+    const trend = p > prev ? `<span class="up">▲</span>` : p < prev ? `<span class="down">▼</span>` : "";
+    tr.innerHTML = `<td><b>${CROPS[k].name}</b></td><td>${CROPS[k].days} days</td><td>$${CROPS[k].seed}</td><td>$${p} ${trend}</td><td></td>`;
+    const b = document.createElement("button"); b.textContent = "Buy seed"; b.id = "buy-"+k; b.disabled = S.money < CROPS[k].seed; b.onclick = () => buy(k);
+    tr.lastChild.append(b); tb.append(tr);
+  }
+  const land = $("landRow"); land.innerHTML = "";
+  const idx = S.rowsOpen - 4;
+  if (LAND_COST[idx] != null){ const b = document.createElement("button"); b.id = "landBtn"; b.textContent = `Buy another row of land ($${LAND_COST[idx]})`; b.onclick = buyLand; land.append(b); }
+  $("weather").textContent = S.rain ? "Raining today. Every tilled plot is watered." : "Sunny today. Remember to water.";
+}
+
+let modalAction = null;
+function openModal(title, text, onYes){
+  $("modalTitle").textContent = title; $("modalText").textContent = text; modalAction = onYes;
+  $("modalYes").hidden = !onYes; $("modalNo").textContent = onYes ? "Keep farming" : "Nice!"; $("modal").hidden = false;
+}
+$("modalNo").onclick = () => { $("modal").hidden = true; };
+$("modalYes").onclick = () => { $("modal").hidden = true; modalAction && modalAction(); };
+$("resetBtn").onclick = () => openModal("Start over?", "Your farm, cash and seeds will be reset.", () => { S = freshState(); render(); save(); toast("A fresh field. Good luck!"); });
+$("muteBtn").onclick = () => { muted = !muted; $("muteBtn").textContent = "Sound: " + (muted ? "off" : "on"); };
+$("sellBtn").onclick = sell; $("sleepBtn").onclick = sleep;
+
+function tileAt(e){ const r = cv.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width * 768, y = (e.clientY - r.top) / r.height * 576; const cx = Math.floor(x/T), cy = Math.floor(y/T); return (cx<0||cy<0||cx>=COLS||cy>=ROWS) ? -1 : cy*COLS+cx; }
+cv.addEventListener("pointerdown", e => { const i = tileAt(e); if (i >= 0) act(i); });
+cv.addEventListener("pointermove", e => { hover = e.pointerType === "mouse" ? tileAt(e) : -1; });
+cv.addEventListener("pointerleave", () => hover = -1);
+window.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  if (e.key === "1") S.selected = "radish"; else if (e.key === "2") S.selected = "corn"; else if (e.key === "3") S.selected = "melon";
+  else if (e.key.toLowerCase() === "z") return sleep(); else if (e.key.toLowerCase() === "s") return sell(); else return;
+  render(); save();
+});
+
+function start(data){
+  S = (data && data.state) || load() || freshState();
+  window.claude?.hot?.snapshot?.(() => ({ state: S }));
+  render(); requestAnimationFrame(frame);
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body></html>
